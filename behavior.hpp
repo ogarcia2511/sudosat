@@ -1,0 +1,7 @@
+class behavior
+{
+    public:
+
+    private:
+    
+};
