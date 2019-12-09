@@ -7,22 +7,16 @@
  *
  */
 
-/* networking-related c headers */
+#include "dependencies.hpp"
 #include "network.hpp"
-
-/* cpp headers */
-#include <cstdlib>
-#include <string>
-#include <iostream>
-#include <chrono> 
-#include <thread>
 
 using std::string;
 using std::cin;
 using std::cout;
 using std::endl;
 using std::thread;
-using namespace std::chrono;
+
+std::mutex r_mut;
 
 int main(int argc, char *argv[])
 {

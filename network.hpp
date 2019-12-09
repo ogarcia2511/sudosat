@@ -1,23 +1,5 @@
-/* networking-related C headers */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <sys/poll.h>
-
-/* for C++ standard lib threading */
-#include <thread>
-
-/* for printing errors/debugging */
-#include <iostream>
-#include <string.h>
-
-/* shared dependencies (put into one header lol (OR MACRO GUARD)) */
+#include "dependencies.hpp"
 #include "worker.hpp"
-
-#define MAX_CONN 10
 
 class network
 {
@@ -28,10 +10,24 @@ class network
         int port_no;
         int rc;
         int on;
-        int num_conns;
 
         struct sockaddr_in serv_addr;
         char *net_buff;
+
+        void add_new_conn()
+        {
+            const std::lock_guard<std::mutex> lock(c_mut);
+            ++conns;
+
+            return;
+        }
+
+        int read_num_conns()
+        {
+            const std::lock_guard<std::mutex> lock(c_mut);
+            
+            return conns;
+        }
 
         // struct pollfd fds[MAX_CONN];
         // int num_fds;
@@ -46,7 +42,6 @@ class network
             serv_addr.sin_port = htons(port_no);
 
             on = 1;
-            num_conns = 0;
         }
 
         void setup_conn()
@@ -88,7 +83,17 @@ class network
             * std::thread net_thread(&network::run, n, [RUN() PARAMS]);
             */
             while(true)
-            {           
+            {    
+                if(read_num_conns() == 0 && !on)
+                {
+                    std::cout << "all conns closed!" << std::endl;
+                    return;
+                }
+
+                std::cout << read_num_conns() << std::endl;
+
+                on = 0;
+
                 listen_s = listen(sock_fd, 1); // 2nd argument is "backlog"
                 if(listen_s < 0) std::cout << "error listening on port" << std::endl;
 
@@ -97,9 +102,9 @@ class network
                 conn_fd = accept(sock_fd, (struct sockaddr *) NULL, NULL);
                 if(conn_fd < 0) std::cout << "error accepting connection" << std::endl;
                 else std::cout << "accepted conn!" << std::endl; 
+                
+                add_new_conn();
 
-                // if(num_conns < 2)
-                // {
                 worker *w = new worker(conn_fd);
                 std::thread w_thr(&worker::work, w);
 

@@ -1,18 +1,5 @@
-/* networking-related C headers */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-/* for C++ standard lib threading */
-#include <thread>
-
-/* for printing errors/debugging */
-#include <iostream>
-#include <string.h>
-#include <cstdlib>
+#include "dependencies.hpp"
+#include "info.hpp"
 
 class worker
 {
@@ -135,6 +122,11 @@ class worker
                     std::cout << "data: " << buffer << std::endl;
                 }
             }
+
+            const std::lock_guard<std::mutex> lock(c_mut);
+            --conns;
+
+            std::cout << conns << std::endl;
 
             return;
         }
