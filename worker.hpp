@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 /* for C++ standard lib threading */
 #include <thread>
@@ -18,6 +19,7 @@ class worker
     private:
         int worker_id;
         int connection;
+        int sock_opt;
         char buffer[256];
         fd_set read_set;
         struct timeval timeout;
@@ -33,6 +35,12 @@ class worker
 
             timeout.tv_sec = 5;
             timeout.tv_usec = 0;
+
+            sock_opt = setsockopt(connection, SOL_SOCKET,
+                SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+
+            // fcntl(connection, F_SETFL, fcntl(connection, F_GETFL) | O_NONBLOCK);
+
         }
 
         void work()
@@ -42,25 +50,83 @@ class worker
             while(true)
             {
 
-                int s = select(connection + 1, &read_set, NULL, NULL, &timeout);
+                // int s = select(connection + 1, &read_set, NULL, NULL, &timeout);
 
-                if(s < 0) //error case
-                {
-                    std::cout << "socket error!" << worker_id << std::endl;
-                    close(connection);
-                    break;
-                }
+                // if(s < 0) //error case
+                // {
+                //     std::cout << "socket error!" << worker_id << std::endl;
+                //     close(connection);
+                //     break;
+                // }
             
-                if(s == 0) // timeout case
+                // if(s == 0) // timeout case
+                // {
+                //     // close connection and exit thread
+                //     std::cout << "timeout!" << std::endl;
+                //     close(connection);
+                //     break;
+
+                // }
+
+                // if(s > 0) // data to be read
+                // {
+                //     std::cout << "data to be read!" << std::endl;
+
+                //     read(connection, &buffer, sizeof(buffer));
+
+                //     std::cout << "data: " << buffer << std::endl;
+                // }
+
+                // switch(recv(connection, &buffer, sizeof(buffer), MSG_PEEK | MSG_WAITALL))
+                // {
+                //     case -1:
+                //         if(errno == EAGAIN)
+                //         {
+                //             std::cout << "timeout!" << std::endl;
+                //             close(connection);
+                //             return;
+                //         }
+                //         else
+                //         {
+                //             std::cout << "other error!" << std::endl;
+                //             close(connection);   
+                //             return;                            
+                //         }
+                //         break;
+                //     case 0:
+                //     default:
+                //         std::cout << "data to be read!" << std::endl;
+                //         break;
+                // }
+
+                // maybe look into poll? or call select in one thread
+                // and pass data to worker threads ??
+                
+                int s = recv(connection, &buffer, sizeof(buffer), MSG_PEEK);
+
+                if(s < 0) // error case
                 {
-                    // close connection and exit thread
-                    std::cout << "timeout!" << std::endl;
+                    if(errno == EAGAIN) // typical timeout error
+                    {
+                        std::cout << "timeout!" << worker_id << std::endl;
+                        close(connection);
+                        break;
+                        // sleep(1);
+                    }
+                    else // other error
+                    {
+                        std::cout << "timeout/other error!" << worker_id << std::endl;
+                        close(connection);
+                        break;                        
+                    }
+                }   
+                else if(s == 0)
+                {
+                    std::cout << "no more data!" << worker_id << std::endl;
                     close(connection);
-                    break;
-
+                    break;   
                 }
-
-                if(s > 0) // data to be read
+                else // data to be read
                 {
                     std::cout << "data to be read!" << std::endl;
 
@@ -68,7 +134,6 @@ class worker
 
                     std::cout << "data: " << buffer << std::endl;
                 }
-
             }
 
             return;

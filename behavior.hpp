@@ -1,7 +1,0 @@
-class behavior
-{
-    public:
-
-    private:
-    
-};
