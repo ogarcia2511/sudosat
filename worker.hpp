@@ -19,6 +19,7 @@ class worker
             connection = conn_fd;
             FD_ZERO(&read_set);
             FD_SET(connection, &read_set);
+            
 
             timeout.tv_sec = 5;
             timeout.tv_usec = 0;
@@ -33,6 +34,7 @@ class worker
         void work()
         {
             std::cout << "in worker!" << worker_id << std::endl;
+            char response[6] = "test!";
 
             while(true)
             {
@@ -119,6 +121,9 @@ class worker
 
                     read(connection, &buffer, sizeof(buffer));
 
+                    int er = send(connection, &response, sizeof(response), 0);
+                    if(er < 0) std::cout << errno << std::endl;
+                    
                     std::cout << "data: " << buffer << std::endl;
                 }
             }
