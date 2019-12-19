@@ -1,28 +1,41 @@
-// Client side C/C++ program to demonstrate Socket programming 
+/* all necessary c headers */
 #include <stdio.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <unistd.h> 
 #include <string.h> 
 #include <time.h>
+#include <stdlib.h>
 
+/* timing and printing */
 #include <iostream>
 #include <chrono>
 
 #define PORT 5000 
    
-int main(int argc, char const *argv[]) 
+int main(int argc, char *argv[]) 
 {
     if(argc < 2)
-        return -1;
-    int sock = 0, valread; 
+    {
+        std::cout << "wrong number of args!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+
+    int sock_fd = 0; 
+    int r;
+
     struct sockaddr_in serv_addr; 
-    char *hello = "Hello from client"; 
+
+    char *msg = "testing functionality!"; 
+
     char buffer[1024] = {0}; 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+
+    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_fd < 0) 
     { 
-        printf("\n Socket creation error \n"); 
-        return -1; 
+        std::cout << "error making socket!" << std::endl; 
+        exit(EXIT_FAILURE);
     } 
    
     serv_addr.sin_family = AF_INET; 
@@ -31,36 +44,30 @@ int main(int argc, char const *argv[])
     // Convert IPv4 and IPv6 addresses from text to binary form 
     if(inet_pton(AF_INET, (char *)argv[1], &serv_addr.sin_addr)<=0)  
     { 
-        printf("\nInvalid address/ Address not supported \n"); 
-        return -1; 
+        std::cout << "address error!" << std::endl; 
+        exit(EXIT_FAILURE);
     } 
 
-    auto t_start = std::chrono::high_resolution_clock::now();
+    auto t_start = std::chrono::system_clock::now();
 
    
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
+    if (connect(sock_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
     { 
-        printf("\nConnection Failed \n"); 
-        return -1; 
+        std::cout << "error creating connection!" << std::endl; 
+        exit(EXIT_FAILURE);
     } 
 
-    sleep(2);
-    send(sock , hello , strlen(hello) , 0 ); 
-    printf("Hello message sent\n"); 
-    valread = read( sock , buffer, 1024); 
-    printf("%s\n",buffer ); 
-    send(sock , hello , strlen(hello) , 0 ); 
-    printf("Hello message sent\n"); 
-    valread = read( sock , buffer, 1024); 
-    printf("%s\n",buffer ); 
-    send(sock , hello , strlen(hello) , 0 ); 
-    printf("Hello message sent\n"); 
-    valread = read( sock , buffer, 1024); 
-    printf("%s\n",buffer ); 
+    send(sock_fd, msg, strlen(msg), 0);  
+    r = read(sock_fd, buffer, 1024); 
+    send(sock_fd, msg, strlen(msg), 0); 
+    r = read(sock_fd, buffer, 1024);  
+    send(sock_fd, msg, strlen(msg), 0); 
+    r = read(sock_fd, buffer, 1024); 
 
-    auto t_end = std::chrono::high_resolution_clock::now();
-    double elapsed_time = std::chrono::duration<double>(t_end-t_start).count();
+    auto t_end = std::chrono::system_clock::now();
+    double elapsed_time = std::chrono::duration<double>(t_end - t_start).count();
     
     std::cout << "total time taken: " << elapsed_time << " s" << std::endl;
+    
     return 0; 
 } 

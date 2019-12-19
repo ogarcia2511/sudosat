@@ -33,7 +33,8 @@ class worker
 
         void work()
         {
-            std::cout << "in worker!" << worker_id << std::endl;
+            std::cout << "new connection!" << std::endl;
+            
             char response[6] = "test!";
 
             while(true)
@@ -97,41 +98,40 @@ class worker
                 {
                     if(errno == EAGAIN) // typical timeout error
                     {
-                        std::cout << "timeout!" << worker_id << std::endl;
+                        // std::cout << "timeout! " << worker_id << std::endl;
                         close(connection);
                         break;
                         // sleep(1);
                     }
                     else // other error
                     {
-                        std::cout << "timeout/other error!" << worker_id << std::endl;
+                        // std::cout << "timeout/other error! " << worker_id << std::endl;
                         close(connection);
                         break;                        
                     }
                 }   
                 else if(s == 0)
                 {
-                    std::cout << "no more data!" << worker_id << std::endl;
+                    // std::cout << "no more data!" << worker_id << std::endl;
                     close(connection);
                     break;   
                 }
                 else // data to be read
                 {
-                    std::cout << "data to be read!" << std::endl;
 
                     read(connection, &buffer, sizeof(buffer));
 
-                    int er = send(connection, &response, sizeof(response), 0);
-                    if(er < 0) std::cout << errno << std::endl;
+                    int err = send(connection, &response, sizeof(response), 0);
+                    if(err < 0) std::cout << "error: " << errno << std::endl;
                     
-                    std::cout << "data: " << buffer << std::endl;
+                    // std::cout << "data: " << buffer << std::endl;
                 }
             }
 
             const std::lock_guard<std::mutex> lock(c_mut);
             --conns;
 
-            std::cout << conns << std::endl;
+            std::cout << "conns left: " << conns << std::endl;
 
             return;
         }
